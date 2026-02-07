@@ -15,6 +15,7 @@ import {
 // 1. HERO SECTION (Public)
 const HeroSection: React.FC<{ setView: (v: View) => void; announcements: Announcement[] }> = ({ setView, announcements }) => (
   <div className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-20">
+    {/* Background Glows */}
     <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[128px] animate-pulse" />
     <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[128px] animate-pulse" style={{ animationDelay: '2s' }} />
 
@@ -47,6 +48,7 @@ const HeroSection: React.FC<{ setView: (v: View) => void; announcements: Announc
       </div>
     </div>
 
+    {/* Announcements - Public Only */}
     <div className="relative z-10 max-w-7xl mx-auto px-4 mt-24 w-full">
       <div className="flex items-center gap-3 mb-6">
         <div className="h-8 w-1 bg-cyan-500 rounded-full shadow-[0_0_10px_#06b6d4]"></div>
@@ -138,6 +140,7 @@ const GalleryView: React.FC<{ gallery: GalleryItem[] }> = ({ gallery }) => (
 const MembersView: React.FC<{ members: Member[], currentUser: Member | null }> = ({ members, currentUser }) => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   
+  // Filter only approved members for public view, and HIDE ADMINS
   const displayMembers = members.filter(m => m.status === 'APPROVED' && m.role !== 'ADMIN');
 
   return (
@@ -150,6 +153,7 @@ const MembersView: React.FC<{ members: Member[], currentUser: Member | null }> =
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {displayMembers.map((member) => (
           <div key={member.id} className="glass-panel rounded-xl p-6 flex flex-col items-center text-center relative overflow-hidden group border border-white/10">
+            {/* Admin Badge */}
             {member.role === 'ADMIN' && (
               <div className="absolute top-3 right-3 px-2 py-0.5 bg-red-500/20 border border-red-500/50 rounded text-[10px] font-bold text-red-400 flex items-center gap-1">
                  <Shield size={10} /> Admin
@@ -173,6 +177,7 @@ const MembersView: React.FC<{ members: Member[], currentUser: Member | null }> =
               </div>
             </div>
 
+            {/* Public visitors see less info */}
             {currentUser?.role === 'ADMIN' ? (
               <button 
                 onClick={() => setSelectedMember(member)}
@@ -309,8 +314,7 @@ const RegisterView: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
 
       <div className="glass-panel p-8 rounded-2xl max-w-5xl mx-auto border border-white/10 shadow-2xl shadow-blue-900/10">
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* ... (Form Fields same as before) ... */}
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Personal Information</h3>
               <div className="space-y-4">
@@ -351,9 +355,17 @@ const RegisterView: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
           </div>
           
           <div className="mt-8 p-4 bg-[#0a0f1c]/50 rounded-lg border border-white/10">
+            <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
+              <FileText size={16} className="text-cyan-400" /> বিজ্ঞান ক্লাবের নীতিমালা
+            </h3>
+            <div className="h-32 overflow-y-auto text-sm text-gray-300 p-4 bg-black/40 rounded custom-scrollbar border border-white/5 leading-relaxed font-sans">
+              <p className="font-bold text-cyan-400 mb-2">উদ্দেশ্য</p>
+              <p className="mb-4">বিজ্ঞান ক্লাবের প্রাথমিক লক্ষ্য হল সমালোচনামূলক চিন্তাভাবনাকে উৎসাহিত করা...</p>
+              <p className="mb-4">...জালিয়াতি করলে ক্লাব ও প্রতিযোগিতা থেকে তাৎক্ষণিক বহিষ্কার করা হবে।</p>
+            </div>
             <div className="mt-4 flex items-center gap-3">
               <input type="checkbox" id="agree" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-cyan-500 focus:ring-cyan-500 cursor-pointer" />
-              <label htmlFor="agree" className="text-sm text-gray-300 font-medium cursor-pointer select-none">I have read the policy and agree</label>
+              <label htmlFor="agree" className="text-sm text-gray-300 font-medium cursor-pointer select-none">আমি বিজ্ঞান ক্লাবের সকল নীতিমালা পড়েছি এবং সম্মত আছি</label>
             </div>
           </div>
 
@@ -458,16 +470,16 @@ const AdminDashboard: React.FC<{ currentUser: Member; setCurrentUser: (u: Member
   const deleteItem = async (type: 'PROJ' | 'ANN' | 'GAL', id: number) => {
       if(!confirm("Delete item?")) return;
       if (type === 'PROJ') {
-         // Need a specialized delete method for projects based on number ID, 
-         // but our DB.delete... methods are setup for main logic.
-         // Let's assume we implement deletes later properly or use direct calls here for simplicity?
-         // For now, implementing direct call via generic save is hard because we need to delete.
-         // Let's modify DB to have generic delete or just do it:
-         // For this example, I will assume db.ts functions handle it, 
-         // BUT wait, db.ts save functions are UPSERTS.
-         // I should add delete functions to DB for these tables.
-         // For brevity, I'll alert that Delete is handled in DB update.
-         alert("Delete functionality requires adding delete methods to DB interface for these tables.");
+         // Note: Real apps should use DB.deleteProject(id)
+         // For now using save with filtered list or direct Supabase delete logic
+         const newD = projects.filter(p => p.id !== id);
+         await DB.saveProjects(newD);
+      } else if (type === 'ANN') {
+         const newD = announcements.filter(a => a.id !== id);
+         await DB.saveAnnouncements(newD);
+      } else if (type === 'GAL') {
+         const newD = gallery.filter(g => g.id !== id);
+         await DB.saveGallery(newD);
       }
       loadData();
       refreshData();
@@ -553,6 +565,7 @@ const AdminDashboard: React.FC<{ currentUser: Member; setCurrentUser: (u: Member
                          <div>
                             <p className="font-bold text-white">{m.name}</p>
                             <p className="text-xs text-gray-400">Class: {m.class} | Roll: {m.roll} | Mob: {m.mobile}</p>
+                            <p className="text-xs text-gray-500 mt-1">Applied: {new Date(m.joinedDate).toLocaleDateString()}</p>
                          </div>
                          <div className="flex items-center gap-2">
                            {approveId === m.id ? (
@@ -620,6 +633,7 @@ const AdminDashboard: React.FC<{ currentUser: Member; setCurrentUser: (u: Member
                           <div><p className="font-bold text-white">{p.title}</p><p className="text-xs text-cyan-400">{p.status}</p></div>
                           <div className="flex gap-2">
                              <button onClick={() => openCmsModal('PROJ', p)} className="text-cyan-400 hover:text-white p-2"><Edit size={16}/></button>
+                             <button onClick={() => deleteItem('PROJ', p.id)} className="text-red-400 hover:text-white p-2"><Trash2 size={16}/></button>
                           </div>
                       </div>
                   ))}
@@ -628,6 +642,7 @@ const AdminDashboard: React.FC<{ currentUser: Member; setCurrentUser: (u: Member
                           <div><p className="font-bold text-white">{a.title}</p><p className="text-xs text-gray-400">{a.date} - {a.type}</p></div>
                            <div className="flex gap-2">
                              <button onClick={() => openCmsModal('ANN', a)} className="text-cyan-400 hover:text-white p-2"><Edit size={16}/></button>
+                             <button onClick={() => deleteItem('ANN', a.id)} className="text-red-400 hover:text-white p-2"><Trash2 size={16}/></button>
                           </div>
                       </div>
                   ))}
@@ -636,6 +651,7 @@ const AdminDashboard: React.FC<{ currentUser: Member; setCurrentUser: (u: Member
                           <div className="flex items-center gap-3"><img src={g.image} className="w-10 h-10 object-cover rounded" /><p className="font-bold text-white">{g.title}</p></div>
                            <div className="flex gap-2">
                              <button onClick={() => openCmsModal('GAL', g)} className="text-cyan-400 hover:text-white p-2"><Edit size={16}/></button>
+                             <button onClick={() => deleteItem('GAL', g.id)} className="text-red-400 hover:text-white p-2"><Trash2 size={16}/></button>
                           </div>
                       </div>
                   ))}
@@ -674,31 +690,82 @@ const AdminDashboard: React.FC<{ currentUser: Member; setCurrentUser: (u: Member
         </div>
       </div>
       
-      {/* Edit/CMS Modals ... (Using same Modal Structure) */}
+      {/* Member Edit Modal */}
       <Modal isOpen={!!editingMember} onClose={() => setEditingMember(null)} title="Edit Member Details">
         {editingMember && (
             <form onSubmit={handleSaveMemberChanges} className="space-y-4">
-                 <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                     <div><label className="text-xs text-gray-400">Name</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.name} onChange={e => setEditingMember({...editingMember, name: e.target.value})} /></div>
                     <div><label className="text-xs text-gray-400">Class</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.class} onChange={e => setEditingMember({...editingMember, class: e.target.value})} /></div>
-                    {/* Add other fields similarly if needed */}
+                    <div><label className="text-xs text-gray-400">Roll</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.roll} onChange={e => setEditingMember({...editingMember, roll: e.target.value})} /></div>
+                    <div><label className="text-xs text-gray-400">Mobile</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.mobile} onChange={e => setEditingMember({...editingMember, mobile: e.target.value})} /></div>
+                    <div><label className="text-xs text-gray-400">Father Name</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.fatherName} onChange={e => setEditingMember({...editingMember, fatherName: e.target.value})} /></div>
+                    <div><label className="text-xs text-gray-400">Mother Name</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.motherName} onChange={e => setEditingMember({...editingMember, motherName: e.target.value})} /></div>
+                    <div><label className="text-xs text-gray-400">Blood Group</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.bloodGroup} onChange={e => setEditingMember({...editingMember, bloodGroup: e.target.value})} /></div>
+                    <div><label className="text-xs text-gray-400">DOB</label><input type="date" className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.dob} onChange={e => setEditingMember({...editingMember, dob: e.target.value})} /></div>
+                    <div className="col-span-2"><label className="text-xs text-gray-400">Birth Certificate No</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.birthCertNo || ''} onChange={e => setEditingMember({...editingMember, birthCertNo: e.target.value})} /></div>
                 </div>
+                <div><label className="text-xs text-gray-400">Present Address</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.presentAddress} onChange={e => setEditingMember({...editingMember, presentAddress: e.target.value})} /></div>
+                <div><label className="text-xs text-gray-400">Permanent Address</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={editingMember.permanentAddress} onChange={e => setEditingMember({...editingMember, permanentAddress: e.target.value})} /></div>
+                
                 <div className="flex justify-end pt-4"><button type="submit" className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-lg font-bold">Save Changes</button></div>
             </form>
         )}
       </Modal>
 
-      <Modal isOpen={cmsModal.isOpen} onClose={() => setCmsModal({...cmsModal, isOpen: false})} title="Content Editor">
+      {/* CMS Edit Modal */}
+      <Modal isOpen={cmsModal.isOpen} onClose={() => setCmsModal({...cmsModal, isOpen: false})} title={cmsModal.data && projects.find(p => p.id === cmsModal.data.id) ? "Edit Content" : (cmsModal.type === 'FACT' ? "Edit Weekly Fact" : "Add/Edit Content")}>
          {cmsModal.isOpen && cmsModal.data && (
              <form onSubmit={handleSaveCms} className="space-y-4">
-                 {/* Reusing existing CMS inputs */}
-                 {cmsModal.type === 'FACT' && (
+                 {/* Project Form */}
+                 {cmsModal.type === 'PROJ' && (
                      <>
                         <div><label className="text-xs text-gray-400">Title</label><input required className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.title} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, title: e.target.value}})} /></div>
-                        <div><label className="text-xs text-gray-400">Content</label><textarea required className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white h-32" value={cmsModal.data.content} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, content: e.target.value}})} /></div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div><label className="text-xs text-gray-400">Status</label><select className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.status} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, status: e.target.value}})}><option value="ONGOING">ONGOING</option><option value="COMPLETED">COMPLETED</option><option value="UPCOMING">UPCOMING</option></select></div>
+                            <div><label className="text-xs text-gray-400">Image URL</label><input className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.image} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, image: e.target.value}})} /></div>
+                        </div>
+                        <div><label className="text-xs text-gray-400">Description</label><textarea className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white h-24" value={cmsModal.data.description} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, description: e.target.value}})} /></div>
+                        <div>
+                            <label className="text-xs text-gray-400">Researchers (comma separated)</label>
+                            <input 
+                                className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" 
+                                value={cmsModal.data.researchers} 
+                                onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, researchers: e.target.value}})}
+                                placeholder="e.g. John Doe, Jane Smith"
+                            />
+                        </div>
                      </>
                  )}
-                 {/* ... other types ... */}
+                 {/* Announcement Form */}
+                 {cmsModal.type === 'ANN' && (
+                     <>
+                        <div><label className="text-xs text-gray-400">Title</label><input required className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.title} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, title: e.target.value}})} /></div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div><label className="text-xs text-gray-400">Date</label><input type="date" required className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.date} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, date: e.target.value}})} /></div>
+                            <div><label className="text-xs text-gray-400">Type</label><select className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.type} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, type: e.target.value}})}><option value="PUBLIC">PUBLIC</option><option value="INTERNAL">INTERNAL</option></select></div>
+                            <div><label className="text-xs text-gray-400">Priority</label><select className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.priority} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, priority: e.target.value}})}><option value="NORMAL">NORMAL</option><option value="HIGH">HIGH</option></select></div>
+                        </div>
+                        <div><label className="text-xs text-gray-400">Description</label><textarea required className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white h-24" value={cmsModal.data.description} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, description: e.target.value}})} /></div>
+                     </>
+                 )}
+                 {/* Gallery Form */}
+                 {cmsModal.type === 'GAL' && (
+                     <>
+                        <div><label className="text-xs text-gray-400">Title</label><input required className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.title} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, title: e.target.value}})} /></div>
+                        <div className="grid grid-cols-2 gap-4">
+                             <div><label className="text-xs text-gray-400">Category</label><select className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.category} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, category: e.target.value}})}><option value="Event">Event</option><option value="Experiment">Experiment</option><option value="Competition">Competition</option></select></div>
+                             <div><label className="text-xs text-gray-400">Image URL</label><input required className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.image} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, image: e.target.value}})} /></div>
+                        </div>
+                     </>
+                 )}
+                 {/* Weekly Fact Form */}
+                 {cmsModal.type === 'FACT' && (
+                     <>
+                        <div><label className="text-xs text-gray-400">Title / Question</label><input required className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white" value={cmsModal.data.title} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, title: e.target.value}})} /></div>
+                        <div><label className="text-xs text-gray-400">Content / Answer</label><textarea required className="w-full bg-black/20 border border-gray-700 rounded p-2 text-white h-32" value={cmsModal.data.content} onChange={e => setCmsModal({...cmsModal, data: {...cmsModal.data, content: e.target.value}})} /></div>
+                     </>
+                 )}
                  <div className="flex justify-end pt-4"><button type="submit" className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-lg font-bold">Save Content</button></div>
              </form>
          )}
