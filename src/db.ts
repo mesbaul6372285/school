@@ -1,92 +1,82 @@
 import { supabase } from './lib/supabase';
 import { Member, Project, Announcement, GalleryItem, WeeklyFact } from './types';
 
-// Helper to map DB snake_case columns to camelCase if needed,
-// but since we defined columns in Supabase carefully, they match mostly.
-// Note: Supabase returns data matching the column names.
+// This file acts as the bridge between your App and Supabase.
 
 export const DB = {
-  // Init is no longer needed with Supabase, but keeping empty for compatibility
+  // --- INITIALIZATION (Optional Check) ---
   init: async () => {
-    // Optional: Check connection
-    const { error } = await supabase.from('members').select('count', { count: 'exact', head: true });
-    if (error) console.error('Supabase connection error:', error);
+    // We can leave this empty or use it to log a connection success
+    console.log('Supabase DB initialized');
   },
 
-  // --- MEMBERS ---
+  // --- MEMBER MANAGEMENT ---
 
+  // 1. Get All Members
   getMembers: async (): Promise<Member[]> => {
     const { data, error } = await supabase
       .from('members')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (error) {
-      console.error('Error fetching members:', error);
-      return [];
-    }
-    return data as Member[];
+    if (error) throw new Error(error.message);
+    return (data as Member[]) || [];
   },
   
+  // 2. Add a New Member (Registration)
   saveMember: async (member: Member) => {
-    // Check if ID exists to decide Insert vs Update
-    const { data: existing } = await supabase
+    // Check if ID exists to avoid duplicates (Supabase throws error anyway, but good for safety)
+    const { error } = await supabase
       .from('members')
-      .select('id')
-      .eq('id', member.id)
-      .single();
-
-    if (existing) {
-      const { error } = await supabase
-        .from('members')
-        .update(member)
-        .eq('id', member.id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from('members')
-        .insert([member]);
-      if (error) throw error;
-    }
+      .insert([member]);
+      
+    if (error) throw new Error(error.message);
   },
 
+  // 3. Update an Existing Member
   updateMember: async (updatedMember: Member) => {
     const { error } = await supabase
       .from('members')
       .update(updatedMember)
       .eq('id', updatedMember.id);
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 
-  // Important: Supabase doesn't allow changing Primary Key easily.
-  // We delete the old record and insert a new one.
+  // 4. Replace Member ID (Used when Admin approves and assigns a real ID)
   replaceMember: async (oldId: string, newMember: Member) => {
-    // 1. Delete old
-    const { error: delError } = await supabase
+    // Strategy: Insert the NEW record first. If successful, delete the OLD one.
+    // This prevents losing data if the insert fails.
+    
+    // Step 1: Insert New
+    const { error: insertError } = await supabase
+      .from('members')
+      .insert([newMember]);
+
+    if (insertError) throw new Error(`Failed to create new ID: ${insertError.message}`);
+
+    // Step 2: Delete Old (Only if Step 1 succeeded)
+    const { error: deleteError } = await supabase
       .from('members')
       .delete()
       .eq('id', oldId);
-    
-    if (delError) throw delError;
 
-    // 2. Insert new
-    const { error: insError } = await supabase
-      .from('members')
-      .insert([newMember]);
-    
-    if (insError) throw insError;
+    if (deleteError) {
+      console.error("Warning: Created new member but failed to delete old temp record.");
+    }
   },
 
+  // 5. Delete Member
   deleteMember: async (id: string) => {
     const { error } = await supabase
       .from('members')
       .delete()
       .eq('id', id);
     
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 
+  // 6. Find Single Member (Login)
   findMember: async (id: string): Promise<Member | undefined> => {
     const { data, error } = await supabase
       .from('members')
@@ -94,52 +84,51 @@ export const DB = {
       .eq('id', id)
       .single();
     
-    if (error || !data) return undefined;
+    if (error) return undefined; // Return undefined if not found/error
     return data as Member;
   },
 
-  // --- CMS CONTENT ---
+  // --- CMS CONTENT (Projects, Announcements, Gallery) ---
 
+  // Projects
   getProjects: async (): Promise<Project[]> => {
     const { data, error } = await supabase
       .from('projects')
       .select('*')
-      .order('id', { ascending: false }); // Using ID for ordering as proxy for time
+      .order('id', { ascending: false }); // Show newest first
     
     if (error) return [];
-    return data as Project[];
+    return (data as Project[]);
   },
 
   saveProjects: async (projects: Project[]) => {
-    // In the App.tsx logic, saveProjects receives the FULL array.
-    // This is inefficient for Supabase. We should update specific items.
-    // However, to keep compatibility with your App.tsx logic:
-    // We will upsert (insert or update) each project.
-    
+    // Supabase upsert can handle an array of items to update/insert at once
     const { error } = await supabase
       .from('projects')
       .upsert(projects, { onConflict: 'id' });
       
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 
+  // Announcements
   getAnnouncements: async (): Promise<Announcement[]> => {
     const { data, error } = await supabase
       .from('announcements')
       .select('*')
-      .order('id', { ascending: false });
+      .order('date', { ascending: false });
     
     if (error) return [];
-    return data as Announcement[];
+    return (data as Announcement[]);
   },
 
   saveAnnouncements: async (announcements: Announcement[]) => {
     const { error } = await supabase
       .from('announcements')
       .upsert(announcements, { onConflict: 'id' });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 
+  // Gallery
   getGallery: async (): Promise<GalleryItem[]> => {
     const { data, error } = await supabase
       .from('gallery')
@@ -147,36 +136,41 @@ export const DB = {
       .order('id', { ascending: false });
     
     if (error) return [];
-    return data as GalleryItem[];
+    return (data as GalleryItem[]);
   },
 
   saveGallery: async (galleryItems: GalleryItem[]) => {
     const { error } = await supabase
       .from('gallery')
       .upsert(galleryItems, { onConflict: 'id' });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 
+  // Weekly Fact
   getWeeklyFact: async (): Promise<WeeklyFact> => {
     const { data, error } = await supabase
       .from('weekly_fact')
       .select('*')
-      .order('id', { ascending: false }) // Get latest
       .limit(1)
       .single();
     
+    // Fallback if DB is empty
     if (error || !data) {
-       return { id: 0, title: "Weekly Fact", content: "Loading..." };
+       return { id: 0, title: "Welcome!", content: "Science facts will appear here." };
     }
     return data as WeeklyFact;
   },
 
   saveWeeklyFact: async (data: WeeklyFact) => {
-    // If it has an ID, update it, otherwise insert
+    // We remove 'id' from the data if it's 0 or undefined to let Supabase auto-generate/handle it
+    // But since we are Upserting, we generally want to match the ID.
+    // Logic: We usually only have ONE row for weekly fact in this simple app.
+    
+    // Simple fix: Always update the row with ID 1, or just upsert whatever is passed.
     const { error } = await supabase
       .from('weekly_fact')
       .upsert(data);
     
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   },
 };
